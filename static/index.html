@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MemoryAgent — AI that remembers you</title>
+  <meta name="description" content="A conversational AI with persistent per-user memory. It remembers what you tell it across sessions." />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       LOGIN SCREEN
+  ════════════════════════════════════════════════════════ -->
+  <div id="login-screen" class="screen" role="main">
+    <div class="login-card">
+
+      <div class="login-logo">
+        <div class="logo-icon" aria-hidden="true">🧠</div>
+        <div class="logo-text">
+          <span class="logo-title">MemoryAgent</span>
+          <span class="logo-subtitle">AI with persistent memory</span>
+        </div>
+      </div>
+
+      <div class="login-heading">
+        <h1>Welcome back</h1>
+        <p>Enter your name to pick up right where you left off. Your memories persist across sessions.</p>
+      </div>
+
+      <form id="login-form" class="login-form" novalidate>
+        <div>
+          <label class="input-label" for="name-input">Your name</label>
+          <input
+            id="name-input"
+            class="text-input"
+            type="text"
+            placeholder="e.g. Alice"
+            autocomplete="off"
+            autocapitalize="words"
+            spellcheck="false"
+            maxlength="80"
+            required
+          />
+        </div>
+        <button id="login-btn" class="btn-primary" type="submit">
+          Start chatting →
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       CHAT SCREEN
+  ════════════════════════════════════════════════════════ -->
+  <div id="chat-screen" class="screen" role="main">
+
+    <!-- Header -->
+    <header class="chat-header">
+      <div class="header-left">
+        <div class="header-logo-icon" aria-hidden="true">🧠</div>
+        <span class="header-title">MemoryAgent</span>
+      </div>
+
+      <div class="header-user-pill">
+        <div class="user-avatar" id="user-avatar" aria-hidden="true">?</div>
+        <span class="header-username" id="header-username">—</span>
+        <button
+          id="switch-user-btn"
+          class="btn-switch-user"
+          type="button"
+          title="Clear session and switch user"
+        >Not you?</button>
+      </div>
+    </header>
+
+    <!-- Messages -->
+    <div id="chat-body" class="chat-body" role="log" aria-live="polite" aria-label="Chat messages">
+      <div id="messages-inner" class="messages-inner"></div>
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-area">
+      <div class="input-row">
+        <textarea
+          id="chat-input"
+          class="chat-text-input"
+          placeholder="Message MemoryAgent…"
+          rows="1"
+          autocomplete="off"
+          spellcheck="true"
+          maxlength="2000"
+          aria-label="Message input"
+        ></textarea>
+        <button
+          id="send-btn"
+          class="btn-send"
+          type="button"
+          aria-label="Send message"
+          title="Send (Enter)"
+        >
+          <!-- Paper-plane icon (inline SVG, no external deps) -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+               xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M22 2L11 13" stroke="white" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast container (outside screens so it always overlays) -->
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

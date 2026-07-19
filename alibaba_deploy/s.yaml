@@ -1,0 +1,31 @@
+edition: 1.0.0
+name: memoryagent-app
+access: default
+
+resources:
+  memoryagent:
+    component: fc3
+    props:
+      region: ap-southeast-1
+      functionName: memoryagent-backend
+      description: MemoryAgent - Qwen-powered persistent memory assistant
+      runtime: python3.10
+      code: ../
+      handler: alibaba_deploy.fc_handler.fc_handler
+      memorySize: 512
+      timeout: 30
+      environmentVariables:
+        QWEN_API_KEY: ${env(QWEN_API_KEY)}
+        ALIBABA_ACCESS_KEY_ID: ${env(ALIBABA_ACCESS_KEY_ID)}
+        ALIBABA_ACCESS_KEY_SECRET: ${env(ALIBABA_ACCESS_KEY_SECRET)}
+        ALIBABA_OSS_ENDPOINT: ${env(ALIBABA_OSS_ENDPOINT)}
+        ALIBABA_OSS_BUCKET: ${env(ALIBABA_OSS_BUCKET)}
+      triggers:
+        - name: httpTrigger
+          type: http
+          config:
+            authType: anonymous
+            methods:
+              - GET
+              - POST
+              - DELETE
