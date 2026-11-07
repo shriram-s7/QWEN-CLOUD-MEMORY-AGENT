@@ -1,0 +1,224 @@
+Project: Personal Context Engine (built on MemoryAgent)
+
+1. Vision — read this first, every phase should serve this
+
+Most AI products bundle two different things together: "the model" (the
+reasoning engine) and "the memory" (what it knows about you). Every AI
+company wants those bundled, because the memory is what locks you into
+their product.
+
+This project separates them. The memory of the user lives in a system
+the user controls, independent of any single AI provider. The AI model
+becomes swappable — Qwen today, Gemini tomorrow, a local model next year
+— while the memory persists and travels with the user regardless of
+which model answers them.
+
+This is a prototype, not a commercial product yet. Do not add
+monetization, multi-tenant user management, or production-grade security
+hardening. Optimize for "does the mechanism actually work and can I
+demo it," not "is this ready for other people's data."
+
+2. Current state (do not regress any of this)
+
+The project already has a working:
+
+
+FastAPI backend (app/main.py) exposing /chat, /memories/{user_id},
+/health, /maintenance/decay
+SQLite-backed persistent memory store (app/memory.py) with
+relevance + confidence + recency scoring on recall, and confidence
+decay + hard-delete forgetting over time
+An LLM client that already supports swapping providers via an
+LLM_PROVIDER env var (Qwen, OpenAI, Gemini currently) — this file may
+be named app/llm_client.py or app/qwen_client.py depending on which
+version is in the repo; check before assuming
+A simple web UI (static/index.html, static/style.css,
+static/app.js) with:
+
+A name-based "login" (no real auth) that maps a name to a user_id,
+stored in browser localStorage
+If the same name/user_id is used again, prior memories are recalled
+automatically — this is the working cross-session proof and must
+keep working through every phase below
+
+
+
+
+
+Before starting Phase 1, run the existing acceptance test: start the
+server, confirm the UI loads, confirm typing a name and chatting works,
+confirm a second "login" with the same name recalls prior facts. If this
+baseline doesn't work, fix it before adding anything new.
+
+3. Non-goals (explicitly out of scope for this project, all phases)
+
+
+No real user authentication/password system — name-based localStorage
+identification is intentional and sufficient for a prototype.
+No multi-tenant production security hardening (rate limiting, input
+sanitization beyond basic validation, etc.) unless a specific phase
+below says otherwise.
+No mobile app. Desktop browser only.
+No payment/subscription logic of any kind.
+No migrating away from SQLite unless Phase 4 is explicitly reached and
+a decision is made to do so — SQLite is the correct choice for a
+prototype and should not be "upgraded" prematurely.
+
+
+4. Phased plan
+
+Phase 1 — OpenRouter as the universal model gateway
+
+Goal: prove the "swappable brain" idea concretely by routing through
+OpenRouter instead of maintaining separate integrations per provider.
+OpenRouter exposes one OpenAI-compatible endpoint that can reach many
+different underlying models (including free-tier models), so this
+replaces the need to juggle multiple provider API keys.
+
+Tasks:
+
+
+Add openrouter as a provider option in the existing LLM client
+provider config (base_url: https://openrouter.ai/api/v1, api key
+env var: OPENROUTER_API_KEY).
+Add a LLM_MODEL env var override (should already partially exist) so
+the specific model string (e.g. a :free suffixed model on
+OpenRouter) can be changed without touching code.
+Add a small GET /providers debug endpoint that returns which
+provider + model is currently active, so it's easy to confirm which
+brain is currently plugged in without checking env vars manually.
+In the UI, add a small, unobtrusive text label (e.g. in a corner or
+settings area) showing the current model/provider, pulled from the
+new /providers endpoint. This is what makes the "swappable brain"
+idea visible and demoable, not just true under the hood.
+
+
+Acceptance: switching LLM_PROVIDER/LLM_MODEL env vars and restarting
+the server changes which model answers, with zero code changes, and the
+UI reflects the change. Memory recall behavior is identical regardless
+of which model is active — the memories themselves are provider-agnostic
+and must not change based on which model wrote them.
+
+Phase 2 — Memory ownership and transparency
+
+Goal: make "the user owns their memory" concretely true and visible,
+not just an architectural claim.
+
+Tasks:
+
+
+Add a GET /memories/{user_id}/export endpoint that returns all of a
+user's memories as a single downloadable JSON file.
+Add a "View my memory" screen/panel in the UI (reachable from the chat
+screen) that lists every stored memory for the current user in plain
+language, with:
+
+The memory content
+When it was created / last reinforced
+A delete button per memory (calls the existing
+DELETE /memories/{mem_id} endpoint)
+A "download my data" button (calls the new export endpoint)
+
+
+
+This screen is the "you can see and control what it knows about you"
+proof — it should be simple, readable, not a raw JSON dump in the main
+UI (the export button can give raw JSON; the on-screen list should be
+human-readable).
+
+
+Acceptance: a user can see every fact stored about them in plain
+English, delete any individual fact, and export everything as a file,
+entirely through the UI, without needing to query the API directly.
+
+Phase 3 — Cross-application memory (the core differentiator)
+
+Goal: prove memory can be reused outside of this specific chat UI —
+the actual "not locked into one app" claim.
+
+Tasks (pick the simpler sub-option first; only attempt the harder one if
+time allows):
+
+3a. Manual bridge (simpler, do this first):
+
+
+Add a "Copy memory context" button in the UI that copies the current
+user's recalled/full memory set to the clipboard as a short paragraph
+(e.g. "Known facts about this user: user is vegetarian, allergic to
+peanuts, prefers concise answers.") formatted to be pasted directly
+into the system prompt or first message of any other AI chat tool
+(ChatGPT, Claude, Gemini web UI, etc).
+Add a companion "Learn from pasted conversation" input: a text box
+where the user pastes a conversation they had with a different AI
+tool, and the backend runs the existing memory-extraction step
+(MEMORY: ... pattern) against that pasted text to pull out new facts
+and store them, exactly as if it had been said in this app's chat.
+
+
+This alone proves the concept end-to-end: memory extracted from one AI
+tool, reused in another, with a human doing the copy/paste bridging.
+
+3b. Browser extension (harder, only if time allows after 3a works):
+
+
+A minimal browser extension (Manifest V3) that, when active on a
+known AI chat site (e.g. chat.openai.com, gemini.google.com,
+claude.ai), reads the current draft text in the message box before
+the user hits send, calls this backend's /chat-adjacent memory
+recall (a new lightweight GET /memories/{user_id}/context endpoint
+that just returns the relevant memory text, no LLM call) and prepends
+it to the outgoing message automatically.
+This is a genuinely separate, larger sub-project. Treat it as its own
+milestone with its own testing, not something to rush inside a single
+session. Do not attempt this until 3a is fully working and demoed.
+
+
+Acceptance for 3a: a user can have a conversation in this app, copy a
+memory summary, paste it into an unrelated AI tool's chat, and get a
+response from that other tool that reflects the same known facts — this
+is the demo that proves the core idea.
+
+Phase 4 — Only if the project continues past prototype stage
+
+Not to be started without an explicit decision to do so:
+
+
+Migrate storage from SQLite to a self-hosted or small managed
+Postgres instance, for multi-device access.
+Add per-user encryption of memory content at rest.
+Replace keyword-overlap memory scoring with embedding-based semantic
+similarity (using any provider's embedding endpoint).
+Per-category memory decay rates (permanent facts like allergies vs.
+fast-decaying state like "currently reading X") instead of one global
+half-life.
+
+
+5. Constraints that apply to every phase
+
+
+Never break the existing name-based login → memory recall flow. This
+is the working core and every new feature is additive to it, not a
+replacement.
+Keep using plain HTML/CSS/JS for the frontend — no framework, no
+build step, consistent with the existing UI.
+Keep the memory store as SQLite through Phase 3. Do not "upgrade" the
+database prematurely — it is correctly scoped for a prototype with a
+single user testing it.
+Every new endpoint should be tested manually (curl or the /docs
+Swagger UI) before being wired into the frontend, so backend and
+frontend issues are debugged separately, not simultaneously.
+After each phase, re-run the full existing acceptance test (login,
+chat, re-login with same name, confirm recall) before starting the
+next phase.
+
+
+6. Suggested order of work in a single Antigravity session
+
+
+Confirm baseline still works (see Section 2).
+Phase 1 in full (OpenRouter integration + visible model indicator).
+Phase 2 in full (memory viewer + export + delete in UI).
+Phase 3a only (copy/paste bridge) — stop here unless there's
+significant remaining time.
+Do not start Phase 3b or Phase 4 without a fresh, explicit go-ahead —
+they are meaningfully bigger scopes than everything above combined.

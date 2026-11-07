@@ -23,28 +23,47 @@
         </div>
       </div>
 
-      <div class="login-heading">
-        <h1>Welcome back</h1>
-        <p>Enter your name to pick up right where you left off. Your memories persist across sessions.</p>
+      <div class="auth-mode-toggle" style="display: flex; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 12px; border: 1px solid var(--border);">
+        <button id="auth-mode-login-btn" type="button" class="sidebar-tab-btn active" style="flex: 1; padding: 8px; border-radius: 8px; font-weight: 600;">Log In</button>
+        <button id="auth-mode-signup-btn" type="button" class="sidebar-tab-btn" style="flex: 1; padding: 8px; border-radius: 8px; font-weight: 600;">Sign Up</button>
       </div>
 
+      <div class="login-heading">
+        <h1 id="auth-heading-title">Welcome back</h1>
+        <p id="auth-heading-desc">Enter your username and password to log in securely.</p>
+      </div>
+
+      <div id="auth-error-msg" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 10px 14px; border-radius: 10px; font-size: 13.5px; margin-bottom: 16px;"></div>
+
       <form id="login-form" class="login-form" novalidate>
-        <div>
-          <label class="input-label" for="name-input">Your name</label>
+        <div style="margin-bottom: 14px;">
+          <label class="input-label" for="name-input">Username</label>
           <input
             id="name-input"
             class="text-input"
             type="text"
             placeholder="e.g. Alice"
-            autocomplete="off"
-            autocapitalize="words"
+            autocomplete="username"
+            autocapitalize="none"
             spellcheck="false"
             maxlength="80"
             required
           />
         </div>
+        <div style="margin-bottom: 20px;">
+          <label class="input-label" for="password-input">Password</label>
+          <input
+            id="password-input"
+            class="text-input"
+            type="password"
+            placeholder="Enter password..."
+            autocomplete="current-password"
+            maxlength="128"
+            required
+          />
+        </div>
         <button id="login-btn" class="btn-primary" type="submit">
-          Start chatting →
+          Log In →
         </button>
       </form>
 
@@ -57,67 +76,256 @@
   ════════════════════════════════════════════════════════ -->
   <div id="chat-screen" class="screen" role="main">
 
-    <!-- Header -->
-    <header class="chat-header">
-      <div class="header-left">
-        <div class="header-logo-icon" aria-hidden="true">🧠</div>
-        <span class="header-title">MemoryAgent</span>
+    <!-- Sidebar -->
+    <aside id="chat-sidebar" class="chat-sidebar">
+      <div class="sidebar-tabs">
+        <button id="tab-chats-btn" class="sidebar-tab-btn active" type="button">Chats</button>
+        <button id="tab-teams-btn" class="sidebar-tab-btn" type="button">Teams</button>
       </div>
 
-      <div class="header-user-pill">
-        <div class="user-avatar" id="user-avatar" aria-hidden="true">?</div>
-        <span class="header-username" id="header-username">—</span>
-        <button
-          id="switch-user-btn"
-          class="btn-switch-user"
-          type="button"
-          title="Clear session and switch user"
-        >Not you?</button>
+      <!-- Chats Tab View -->
+      <div id="sidebar-chats-view" class="sidebar-tab-view active">
+        <div class="sidebar-top">
+          <button id="new-chat-btn" class="btn-new-chat" type="button">
+            <span style="font-size: 16px; font-weight: 600;">+</span> New chat
+          </button>
+        </div>
+        <div id="conversations-list" class="conversations-list">
+          <!-- Past conversation items rendered dynamically -->
+        </div>
       </div>
-    </header>
 
-    <!-- Messages -->
-    <div id="chat-body" class="chat-body" role="log" aria-live="polite" aria-label="Chat messages">
-      <div id="messages-inner" class="messages-inner"></div>
-    </div>
+      <!-- Teams Tab View -->
+      <div id="sidebar-teams-view" class="sidebar-tab-view">
+        <div class="sidebar-top">
+          <button id="sidebar-new-team-btn" class="btn-new-chat" type="button">
+            <span style="font-size: 16px; font-weight: 600;">+</span> New team
+          </button>
+        </div>
+        <div id="sidebar-teams-list" class="conversations-list">
+          <!-- Confirmed team items rendered dynamically -->
+        </div>
+      </div>
+    </aside>
 
-    <!-- Input -->
-    <div class="chat-input-area">
-      <div class="input-row">
-        <textarea
-          id="chat-input"
-          class="chat-text-input"
-          placeholder="Message MemoryAgent…"
-          rows="1"
-          autocomplete="off"
-          spellcheck="true"
-          maxlength="2000"
-          aria-label="Message input"
-        ></textarea>
-        <button
-          id="send-btn"
-          class="btn-send"
-          type="button"
-          aria-label="Send message"
-          title="Send (Enter)"
-        >
-          <!-- Paper-plane icon (inline SVG, no external deps) -->
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-               xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M22 2L11 13" stroke="white" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
+    <!-- Main area -->
+    <div class="chat-main">
+      <!-- Header -->
+      <header class="chat-header">
+        <div class="header-left">
+          <div class="header-logo-icon" aria-hidden="true">🧠</div>
+          <span class="header-title">MemoryAgent</span>
+        </div>
+
+        <div class="header-right" style="display: flex; align-items: center; gap: 12px;">
+          <div class="model-selector-wrap">
+            <label for="model-select" class="model-select-label">Model:</label>
+            <select id="model-select" class="model-select" aria-label="Select LLM model">
+              <option value="qwen:qwen-plus">qwen-plus</option>
+              <option value="qwen:qwen-turbo">qwen-turbo</option>
+              <option value="qwen:qwen-max">qwen-max</option>
+              <option value="qwen:qwen-coder-plus">qwen-coder-plus</option>
+              <option value="qwen:qwen-vl-plus">qwen-vl-plus</option>
+              <option value="qwen:qwen-vl-max">qwen-vl-max</option>
+              <option value="qwen:qwen-flash">qwen-flash</option>
+            </select>
+          </div>
+          <button
+            id="view-teams-btn"
+            class="btn-switch-user"
+            type="button"
+            title="View your teams"
+          >👥 Teams</button>
+          <button
+            id="view-memories-btn"
+            class="btn-switch-user"
+            type="button"
+            title="View saved memories"
+          >🧠 Memories</button>
+          <div class="header-user-pill">
+            <div class="user-avatar" id="user-avatar" aria-hidden="true">?</div>
+            <span class="header-username" id="header-username">—</span>
+            <button
+              id="switch-user-btn"
+              class="btn-switch-user"
+              type="button"
+              title="Clear session and switch user"
+            >Not you?</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Pending Invites Notification Banner -->
+      <div id="pending-invites-container" class="pending-invites-container"></div>
+
+      <!-- Team Active Negotiation Bar -->
+      <div id="team-active-bar" class="team-active-bar" style="display: none;">
+        <div class="team-bar-top">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="team-bar-title" id="team-bar-title">Team Name</span>
+            <span id="team-bar-pending-badge" class="team-bar-pending-badge" style="display: none;"></span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="team-invite-btn" class="btn-switch-user" style="font-size: 12px; padding: 4px 8px;" type="button">+ Invite Member</button>
+            <button id="team-leave-btn" class="btn-switch-user" style="font-size: 12px; padding: 4px 8px; color: #ff7070; border-color: rgba(255,112,112,0.3);" type="button">Leave Team</button>
+          </div>
+        </div>
+        <div class="team-bar-members" id="team-bar-members"></div>
+
+        <!-- Collapsible Private Engine Constraints Panel -->
+        <details class="shared-facts-panel">
+          <summary style="cursor: pointer; font-size: 12px; font-weight: 600; color: var(--accent); user-select: none;">🔒 Private Engine Constraints & Preferences</summary>
+          <div style="font-size: 11px; color: var(--text-muted); margin: 6px 0;">Disclose private constraints directly to the Negotiator engine (only visible to you):</div>
+          <div id="shared-facts-list" class="shared-facts-list"></div>
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <input id="share-fact-input" class="chat-text-input" type="text" placeholder="Disclose constraint (e.g. I don't eat pork)..." style="flex: 1; border-radius: var(--radius-sm); padding: 6px 10px; font-size: 12px; height: auto;" />
+            <button id="share-fact-btn" class="btn-primary" type="button" style="width: auto; padding: 6px 12px; font-size: 12px;">Disclose</button>
+          </div>
+        </details>
+      </div>
+
+      <!-- Messages -->
+      <div id="chat-body" class="chat-body" role="log" aria-live="polite" aria-label="Chat messages">
+        <div id="messages-inner" class="messages-inner"></div>
+      </div>
+
+      <!-- Input -->
+      <div class="chat-input-area">
+        <div class="input-row">
+          <textarea
+            id="chat-input"
+            class="chat-text-input"
+            placeholder="Message MemoryAgent…"
+            rows="1"
+            autocomplete="off"
+            spellcheck="true"
+            maxlength="2000"
+            aria-label="Message input"
+          ></textarea>
+          <button
+            id="send-btn"
+            class="btn-send"
+            type="button"
+            aria-label="Send message"
+            title="Send (Enter)"
+          >
+            <!-- Paper-plane icon (inline SVG, no external deps) -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M22 2L11 13" stroke="white" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
   </div>
 
+  <!-- ═══════════════════════════════════════════════════════
+       MEMORY SCREEN
+  ════════════════════════════════════════════════════════ -->
+  <div id="memory-screen" class="screen" role="main">
+    <!-- Header -->
+    <header class="chat-header">
+      <div class="header-left">
+        <button id="back-to-chat-btn" class="btn-switch-user" type="button" style="font-size: 14px; display: flex; align-items: center; gap: 4px;">
+          ← Back to chat
+        </button>
+      </div>
+      <div class="header-right" style="display: flex; align-items: center; gap: 12px;">
+        <button id="copy-context-btn" class="btn-primary" style="padding: 6px 14px; font-size: 13px; width: auto; background: var(--bg-hover); border: 1px solid var(--border);" type="button">
+          📋 Copy memory context
+        </button>
+        <button id="download-data-btn" class="btn-primary" style="padding: 6px 14px; font-size: 13px; width: auto;" type="button">
+          📥 Download my data
+        </button>
+      </div>
+    </header>
+
+    <div class="chat-body" style="padding: 24px;">
+      <div class="messages-inner" style="max-width: 600px; display: flex; flex-direction: column; gap: 16px;">
+        <div class="login-heading" style="margin-bottom: 8px;">
+          <h1>My Saved Memories</h1>
+          <p>Here are the facts and preferences MemoryAgent has learned about you. You can delete any outdated entries or download your complete memory profile.</p>
+        </div>
+        <div id="memories-list" style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
+          <!-- Memory cards will be rendered here dynamically -->
+        </div>
+
+        <!-- Teach me from another conversation -->
+        <div class="teach-section" style="margin-top: 32px; border-top: 1px solid var(--border); padding-top: 24px;">
+          <div class="login-heading" style="margin-bottom: 12px;">
+            <h2>Teach me from another conversation</h2>
+            <p>Paste a conversation or text from another AI chat tool here, and MemoryAgent will extract and remember any new facts about you.</p>
+          </div>
+          <textarea
+            id="teach-input"
+            class="chat-text-input"
+            placeholder="Paste your conversation here..."
+            rows="5"
+            style="width: 100%; border-radius: var(--radius-md); padding: 12px; margin-bottom: 12px; resize: vertical; height: auto;"
+          ></textarea>
+          <button id="teach-btn" class="btn-primary" style="width: auto; padding: 10px 20px;" type="button">
+            ✨ Learn from this
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       TEAMS SCREEN
+  ════════════════════════════════════════════════════════ -->
+  <div id="teams-screen" class="screen" role="main">
+    <!-- Header -->
+    <header class="chat-header">
+      <div class="header-left">
+        <button id="teams-back-to-chat-btn" class="btn-switch-user" type="button" style="font-size: 14px; display: flex; align-items: center; gap: 4px;">
+          ← Back to chat
+        </button>
+      </div>
+      <div class="header-right">
+        <span class="header-title" style="font-weight: 600; font-size: 14px;">👥 Teams & Consent</span>
+      </div>
+    </header>
+
+    <div class="chat-body" style="padding: 24px;">
+      <div class="messages-inner" style="max-width: 680px; display: flex; flex-direction: column; gap: 24px;">
+        
+        <div class="login-heading" style="margin-bottom: 4px;">
+          <h1>Teams Infrastructure</h1>
+          <p>Link accounts for future group features. Users are only linked when both explicitly agree via invites.</p>
+        </div>
+
+        <!-- Create Team Section -->
+        <div class="teams-section-card create-team-card" style="background: rgba(var(--accent-rgb, 100, 108, 255), 0.05); border: 1px solid rgba(var(--accent-rgb, 100, 108, 255), 0.25); border-radius: var(--radius-md); padding: 20px;">
+          <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--accent); display: flex; align-items: center; gap: 6px;">✨ Create a New Team</h2>
+          <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 14px;">Create a team to collaborate. You will be automatically added as the creator and first confirmed member.</p>
+          <div style="display: flex; gap: 10px;">
+            <input id="team-name-input" class="chat-text-input" type="text" placeholder="Team name (e.g. Project Alpha)..." style="flex: 1; border-radius: var(--radius-md); padding: 10px 12px; height: auto;" />
+            <button id="create-team-btn" class="btn-primary" type="button" style="width: auto; padding: 10px 18px;">Create Team</button>
+          </div>
+        </div>
+
+        <!-- Your Teams List Section -->
+        <div class="teams-section-card">
+          <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">👥 Your Confirmed Teams</h2>
+          <div id="user-teams-list" style="display: flex; flex-direction: column; gap: 16px; width: 100%;">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <!-- Toast container (outside screens so it always overlays) -->
   <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>
