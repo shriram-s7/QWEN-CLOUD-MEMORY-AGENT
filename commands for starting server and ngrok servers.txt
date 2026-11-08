@@ -1,6 +1,6 @@
 BACKEND:
 cd e:\memoryagent
-set QWEN_API_KEY=sk-ws-H.XIIXLM.71Yj.MEUCIDLJxJBK_zr_kbDVU_XlldJQWuhm2g0pTLHFSHSbPv4IAiEAyrZpAB63NkeJtc5887VUVV9G_hgfzKb-E8405dcdSuM
+set QWEN_API_KEY=<your-key>
 set LLM_PROVIDER=qwen
 set LLM_MODEL=qwen-plus
 venv\Scripts\uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
